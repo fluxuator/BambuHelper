@@ -5095,50 +5095,58 @@ static void drawPowerConfirm() {
   }
 
   // Wait-release / armed: question + name + hold ring.
+  // Non-round layouts use a larger ring; round 240 keeps the compact layout.
+#if defined(DISPLAY_ROUND_240)
+  const int16_t ry = cy + 24, rr = 34, rt = 8;
+  const int16_t titleY = cy - 70, nameY = cy - 44, warnY = cy - 16, hintY = cy + 64;
+#else
+  const int16_t ry = cy + 12, rr = 70, rt = 14;
+  const int16_t titleY = cy - 124, nameY = cy - 96, warnY = cy - 70;
+  const int16_t hintY = cy + 104, cancelY = cy + 122, offlineY = cy + 140;
+#endif
+
   if (full) {
     setFont(tft, FONT_BODY);
     tft.setTextColor(CLR_TEXT, bg);
-    tft.drawString(v.desiredOn ? "Turn ON printer" : "Turn OFF printer", cx, cy - 70);
+    tft.drawString(v.desiredOn ? "Turn ON printer" : "Turn OFF printer", cx, titleY);
 
     setFont(tft, FONT_LARGE);
     char nameBuf[28];
     snprintf(nameBuf, sizeof(nameBuf), "\"%s\"", (v.name && v.name[0]) ? v.name : "printer");
-    tft.drawString(nameBuf, cx, cy - 44);
+    tft.drawString(nameBuf, cx, nameY);
 
     if (v.warn) {
       setFont(tft, FONT_BODY);
       tft.setTextColor(CLR_TEXT, bg);
-      tft.drawString("PRINTING", cx, cy - 16);
+      tft.drawString("PRINTING", cx, warnY);
     }
 
     setFont(tft, FONT_SMALL);
     tft.setTextColor(CLR_TEXT_DIM, bg);
 #if defined(DISPLAY_ROUND_240)
-    // The square stack (down to cy+110) runs off the bottom of the circle.
-    // Keep the key instruction straight and prominent; curve the secondary
-    // hint along the bottom rim (same style/constants as the printing ETA)
-    // so it stays inside the circle and can't clip on the round bezel.
-    tft.drawString("hold to confirm", cx, cy + 64);
+    // The non-round stack runs off the bottom of the circle; curve the secondary
+    // hint along the bottom rim so it stays inside the bezel.
+    tft.drawString("hold to confirm", cx, hintY);
     if (v.offline) {
       tft.setTextColor(CLR_ORANGE, bg);
-      tft.drawString("plug offline", cx, cy + 82);
+      tft.drawString("plug offline", cx, hintY + 18);
+      tft.setTextColor(CLR_TEXT_DIM, bg);
     }
     drawCurvedString(tft, "tap to cancel", cx, cy, LY_RND_ARC_R, true,
                      CLR_TEXT_DIM, FONT_SMALL, LY_RND_ARC_ETA_HDEG);
 #else
-    tft.drawString("hold to confirm", cx, cy + 74);
-    tft.drawString("tap to cancel",   cx, cy + 92);
+    tft.drawString("hold to confirm", cx, hintY);
+    tft.drawString("tap to cancel",   cx, cancelY);
     if (v.offline) {
       tft.setTextColor(CLR_ORANGE, bg);
-      tft.drawString("plug offline", cx, cy + 110);
+      tft.drawString("plug offline", cx, offlineY);
+      tft.setTextColor(CLR_TEXT_DIM, bg);
     }
 #endif
   }
 
   // Hold-to-confirm ring (redraw the full track every frame, then the fill, so a
   // cancelled/restarted hold leaves no stale progress pixels).
-  const int16_t ry = cy + 24;
-  const int16_t rr = 34, rt = 8;
   tft.drawArc(cx, ry, rr, rr - rt, 0, 360, CLR_TRACK);
   float p = v.progress;
   if (p < 0.0f) p = 0.0f;
